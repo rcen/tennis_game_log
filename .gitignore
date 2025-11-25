@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .DS_Store
 tennis_log.csv
+verify_*.py
