@@ -243,7 +243,7 @@ class TennisLoggerApp(ctk.CTk):
         # Serve Code
         self.lbl_serve_code = ctk.CTkLabel(self.left_frame, text="Serve Code")
         self.lbl_serve_code.pack(anchor="w")
-        self.var_serve_code = ctk.StringVar(value="In (I)")
+        self.var_serve_code = ctk.StringVar(value="In (I) [6]")
         self.btn_serve_code = ctk.CTkButton(self.left_frame, textvariable=self.var_serve_code, 
                                             command=lambda: self._open_popup("Serve Code", ["In (I)", "Ace (A)", "Winner (W)", "Fault (SF)", "Double Fault (DF)", "Wide (WB)"], self.var_serve_code),
                                             height=40)
@@ -252,7 +252,7 @@ class TennisLoggerApp(ctk.CTk):
         # Return Code
         self.lbl_return_code = ctk.CTkLabel(self.left_frame, text="Return Code")
         self.lbl_return_code.pack(anchor="w")
-        self.var_return_code = ctk.StringVar(value="In (I)")
+        self.var_return_code = ctk.StringVar(value="In (I) [6]")
         self.btn_return_code = ctk.CTkButton(self.left_frame, textvariable=self.var_return_code,
                                              command=lambda: self._open_popup("Return Code", ["In (I)", "Net (N)", "Long (L)", "Wide (W)", "Unforced Error (UE)", "Forced Error (FE)"], self.var_return_code),
                                              height=40)
@@ -261,7 +261,7 @@ class TennisLoggerApp(ctk.CTk):
         # Rally Length
         self.lbl_rally = ctk.CTkLabel(self.left_frame, text="Rally Length")
         self.lbl_rally.pack(anchor="w")
-        self.var_rally = ctk.StringVar(value="Short")
+        self.var_rally = ctk.StringVar(value="Short [3]")
         self.btn_rally = ctk.CTkButton(self.left_frame, textvariable=self.var_rally,
                                        command=lambda: self._open_popup("Rally Length", ["Short", "Medium", "Long"], self.var_rally),
                                        height=40)
@@ -270,7 +270,7 @@ class TennisLoggerApp(ctk.CTk):
         # Point Type
         self.lbl_pattern = ctk.CTkLabel(self.left_frame, text="Point Type")
         self.lbl_pattern.pack(anchor="w")
-        self.var_pattern = ctk.StringVar(value="Rally (R)")
+        self.var_pattern = ctk.StringVar(value="Rally (R) [11]")
         
         point_type_options = [
             ("Rally (R)\nBaseline exchange", "Rally (R)"),
@@ -294,7 +294,7 @@ class TennisLoggerApp(ctk.CTk):
         # Tactic
         self.lbl_tactic = ctk.CTkLabel(self.left_frame, text="Tactic")
         self.lbl_tactic.pack(anchor="w")
-        self.var_tactic = ctk.StringVar(value="Neutral (N)")
+        self.var_tactic = ctk.StringVar(value="Neutral (N) [13]")
         
         tactic_options = [
             ("Neutral (N)\nKeep ball in play", "Neutral (N)"),
@@ -324,17 +324,11 @@ class TennisLoggerApp(ctk.CTk):
         self.lbl_outcome = ctk.CTkLabel(self.right_frame, text="Point Outcome", font=("Arial", 20))
         self.lbl_outcome.pack(pady=10)
 
-        # Who Won?
-        self.lbl_winner = ctk.CTkLabel(self.right_frame, text="Winner")
-        self.lbl_winner.pack(anchor="w")
-        self.var_winner = ctk.StringVar(value="Me")
-        self.seg_winner = ctk.CTkSegmentedButton(self.right_frame, values=["Me", "Opponent", "Unknown"], variable=self.var_winner)
-        self.seg_winner.pack(fill="x", pady=5)
 
         # How?
         self.lbl_how = ctk.CTkLabel(self.right_frame, text="How?")
         self.lbl_how.pack(anchor="w")
-        self.var_how = ctk.StringVar(value="Winner (W)")
+        self.var_how = ctk.StringVar(value="Winner (W) [16]")
         how_options = [
             # Errors first (yellow background)
             ("Forced Error (FE)", "Forced Error (FE)", "#DAA520"),
@@ -370,29 +364,53 @@ class TennisLoggerApp(ctk.CTk):
         # Final Shot
         self.lbl_final_shot = ctk.CTkLabel(self.right_frame, text="Final Shot Type")
         self.lbl_final_shot.pack(anchor="w")
-        self.var_final_shot = ctk.StringVar(value="Forehand (F)")
+        self.var_final_shot = ctk.StringVar(value="Forehand (F) [7]")
         self.btn_final_shot = ctk.CTkButton(self.right_frame, textvariable=self.var_final_shot,
                                             command=lambda: self._open_popup("Final Shot Type", ["Forehand (F)", "Backhand (B)", "Volley (V)", "Overhead (O)", "Drop Shot (D)", "Lob (L)", "Slice (S)"], self.var_final_shot),
                                             height=40)
         self.btn_final_shot.pack(fill="x", pady=5)
 
-        # Save Button
-        self.btn_save = ctk.CTkButton(self.right_frame, text="LOG POINT", command=self.log_point, height=50, fg_color="green")
-        self.btn_save.pack(fill="x", pady=20)
+        # Who Won? (Moved to bottom - clicking auto-logs the point)
+        self.lbl_winner = ctk.CTkLabel(self.right_frame, text="Winner (Click to Log Point)", font=("Arial", 14, "bold"))
+        self.lbl_winner.pack(anchor="w", pady=(20, 0))
+        self.var_winner = ctk.StringVar(value="Me")
+        self.seg_winner = ctk.CTkSegmentedButton(self.right_frame, values=["Me", "Opponent", "Unknown"], 
+                                                  variable=self.var_winner, command=self._on_winner_selected,
+                                                  selected_color="green", selected_hover_color="darkgreen")
+        self.seg_winner.pack(fill="x", pady=5)
 
         # Undo Button
         self.btn_undo = ctk.CTkButton(self.right_frame, text="UNDO LAST", command=self.undo_point, fg_color="red")
         self.btn_undo.pack(fill="x", pady=5)
 
     def _open_popup(self, title, options, string_var):
-        SelectionPopup(self, title, options, lambda val: string_var.set(val))
+        def callback_with_count(val):
+            # Add count to the selected value
+            string_var.set(f"{val} [{len(options)}]")
+        SelectionPopup(self, title, options, callback_with_count)
 
     def _open_multi_popup(self, title, options, string_var):
-        MultiSelectionPopup(self, title, options, lambda val: string_var.set(val), current_selection=string_var.get())
+        def callback_with_count(val):
+            # Add count to the selected value (could be multi-value with |)
+            if val:
+                string_var.set(f"{val} [{len(options)}]")
+            else:
+                # If nothing selected, use the first option with count
+                first_val = options[0][1] if isinstance(options[0], tuple) else options[0]
+                string_var.set(f"{first_val} [{len(options)}]")
+        # Remove count from current selection before passing to popup
+        current = string_var.get()
+        if ' [' in current:
+            current = current[:current.rfind(' [')]
+        MultiSelectionPopup(self, title, options, callback_with_count, current_selection=current)
 
     def _open_score_edit(self):
         ScoreEditPopup(self, self.game_state, self._update_score_display)
 
+    def _on_winner_selected(self, value):
+        """Called when a winner is selected - automatically logs the point"""
+        # The value parameter is passed by CTkSegmentedButton when selection changes
+        self.log_point()
 
     def _update_score_display(self):
         self.lbl_score.configure(text=self.game_state.get_display_score())
@@ -449,7 +467,7 @@ class TennisLoggerApp(ctk.CTk):
             self._update_score_display()
         
         # Reset some fields for next point
-        self.var_rally.set("Short")
+        self.var_rally.set("Short [3]")
         self.var_serve_num.set("1") # Reset to 1st serve usually
         self.entry_notes.delete(0, 'end') # Clear notes
 
