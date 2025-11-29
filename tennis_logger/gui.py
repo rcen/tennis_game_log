@@ -162,6 +162,10 @@ class ScoreEditPopup(ctk.CTkToplevel):
         self.chk_tiebreak = ctk.CTkCheckBox(frame_points_header, text="Tie Breaker Mode", variable=self.var_is_tiebreak, command=self._update_point_options)
         self.chk_tiebreak.pack(side="left", padx=10)
         
+        self.var_tb_target = ctk.StringVar(value=str(self.game_state.tiebreak_target))
+        self.seg_tb_target = ctk.CTkSegmentedButton(frame_points_header, values=["7", "10"], variable=self.var_tb_target, width=80)
+        self.seg_tb_target.pack(side="left", padx=10)
+        
         frame_points = ctk.CTkFrame(self)
         frame_points.pack(pady=5)
         
@@ -185,8 +189,10 @@ class ScoreEditPopup(ctk.CTkToplevel):
     
     def _update_point_options(self):
         if self.var_is_tiebreak.get():
+            self.seg_tb_target.configure(state="normal")
             options = [str(i) for i in range(21)] # 0 to 20
         else:
+            self.seg_tb_target.configure(state="disabled")
             options = ["0", "15", "30", "40", "AD"]
             
         self.combo_points_me.configure(values=options)
@@ -199,6 +205,7 @@ class ScoreEditPopup(ctk.CTkToplevel):
             self.game_state.games_me = int(self.entry_games_me.get())
             self.game_state.games_opponent = int(self.entry_games_opp.get())
             self.game_state.is_tiebreak = self.var_is_tiebreak.get()
+            self.game_state.tiebreak_target = int(self.var_tb_target.get())
             
             if self.game_state.is_tiebreak:
                 # Direct integer conversion for tiebreak
@@ -281,17 +288,18 @@ class TennisLoggerApp(ctk.CTk):
         # Rally Length
         self.lbl_rally = ctk.CTkLabel(self.left_frame, text="Rally Length")
         self.lbl_rally.pack(anchor="w")
-        self.var_rally = ctk.StringVar(value="Short")
+        self.var_rally = ctk.StringVar(value="Medium")
         self.seg_rally = ctk.CTkSegmentedButton(self.left_frame, values=["Short", "Medium", "Long"], variable=self.var_rally)
         self.seg_rally.pack(fill="x", pady=5)
 
         # Point Type & Tactic (merged)
         self.lbl_pattern = ctk.CTkLabel(self.left_frame, text="Point Type & Tactic")
         self.lbl_pattern.pack(anchor="w")
-        self.var_pattern = ctk.StringVar(value="Rally (R) [18]")
+        self.var_pattern = ctk.StringVar(value="Unknown (UNK)")
         
         # Merged options - removed duplicates and combined similar tactics
         point_type_options = [
+            ("Unknown (UNK)", "Unknown (UNK)"),
             ("Rally (R)\nBaseline exchange", "Rally (R)"),
             ("Serve + 1 (S1)\nServe then attack", "Serve + 1 (S1)"),
             ("Return + 1 (R1)\nReturn then attack", "Return + 1 (R1)"),
@@ -327,7 +335,7 @@ class TennisLoggerApp(ctk.CTk):
         # How?
         self.lbl_how = ctk.CTkLabel(self.right_frame, text="How?")
         self.lbl_how.pack(anchor="w")
-        self.var_how = ctk.StringVar(value="Forehand Winner (FW) [15]")
+        self.var_how = ctk.StringVar(value="Unknown (UNK)")
         how_options = [
             # Errors first (yellow background)
             ("Forced Error (FE)", "Forced Error (FE)", "#DAA520"),
@@ -459,8 +467,10 @@ class TennisLoggerApp(ctk.CTk):
         self.logger.log_point(data)
         
         # Reset some fields for next point
-        self.var_rally.set("Short")
+        self.var_rally.set("Medium")
         self.var_serve_num.set("1") # Reset to 1st serve usually
+        self.var_how.set("Unknown (UNK)") # Reset How to Unknown
+        self.var_pattern.set("Unknown (UNK)") # Reset Pattern to Unknown
         self.entry_notes.delete(0, 'end') # Clear notes
 
     def undo_point(self):

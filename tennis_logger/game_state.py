@@ -11,6 +11,7 @@ class GameState:
         self.points_opponent = 0
         self.is_tiebreak = False
         self.current_set = 1
+        self.tiebreak_target = 7 # Default to 7 points
         self.match_history = [] # List of tuples/dicts for undo functionality
 
     def get_score_string(self, points):
@@ -53,7 +54,8 @@ class GameState:
             'points_me': self.points_me,
             'points_opponent': self.points_opponent,
             'is_tiebreak': self.is_tiebreak,
-            'current_set': self.current_set
+            'current_set': self.current_set,
+            'tiebreak_target': self.tiebreak_target
         })
 
         if winner == 'me':
@@ -64,9 +66,9 @@ class GameState:
         self._check_game_end()
 
     def _check_game_end(self):
-        # Tiebreak winning logic: 7 points and ahead by 2
+        # Tiebreak winning logic: target points and ahead by 2
         if self.is_tiebreak:
-            if (self.points_me >= 7 or self.points_opponent >= 7) and \
+            if (self.points_me >= self.tiebreak_target or self.points_opponent >= self.tiebreak_target) and \
                abs(self.points_me - self.points_opponent) >= 2:
                 if self.points_me > self.points_opponent:
                     self.games_me += 1
@@ -119,3 +121,4 @@ class GameState:
             self.points_opponent = state['points_opponent']
             self.is_tiebreak = state.get('is_tiebreak', False)
             self.current_set = state['current_set']
+            self.tiebreak_target = state.get('tiebreak_target', 7)
