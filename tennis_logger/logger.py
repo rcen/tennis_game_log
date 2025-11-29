@@ -40,3 +40,18 @@ class MatchLogger:
         with open(self.filename, mode='a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(row)
+
+    def undo_last_log(self):
+        if not os.path.isfile(self.filename):
+            return
+
+        lines = []
+        with open(self.filename, mode='r', newline='') as f:
+            lines = list(csv.reader(f))
+
+        if len(lines) > 1: # Keep header
+            lines.pop()
+            
+            with open(self.filename, mode='w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(lines)
