@@ -9,10 +9,13 @@ class GameState:
         self.games_receiver = 0
         self.points_server = 0
         self.points_receiver = 0
+        self.is_tiebreak = False
         self.current_set = 1
         self.match_history = [] # List of tuples/dicts for undo functionality
 
     def get_score_string(self, points):
+        if self.is_tiebreak:
+            return str(points)
         if points == 0: return "0"
         if points == 1: return "15"
         if points == 2: return "30"
@@ -22,6 +25,9 @@ class GameState:
     def get_display_score(self):
         server_score = self.get_score_string(self.points_server)
         receiver_score = self.get_score_string(self.points_receiver)
+        
+        if self.is_tiebreak:
+            return f"{server_score} - {receiver_score}"
         
         # Deuce handling
         if self.points_server >= 3 and self.points_receiver >= 3:
@@ -46,6 +52,7 @@ class GameState:
             'games_receiver': self.games_receiver,
             'points_server': self.points_server,
             'points_receiver': self.points_receiver,
+            'is_tiebreak': self.is_tiebreak,
             'current_set': self.current_set
         })
 
@@ -57,6 +64,21 @@ class GameState:
         self._check_game_end()
 
     def _check_game_end(self):
+        # Tiebreak winning logic: 7 points and ahead by 2
+        if self.is_tiebreak:
+            if (self.points_server >= 7 or self.points_receiver >= 7) and \
+               abs(self.points_server - self.points_receiver) >= 2:
+                if self.points_server > self.points_receiver:
+                    self.games_server += 1
+                else:
+                    self.games_receiver += 1
+                
+                self.points_server = 0
+                self.points_receiver = 0
+                self.is_tiebreak = False # Reset tiebreak flag after game ends
+                self._check_set_end()
+            return
+
         # Simple game winning logic
         # 4 points and ahead by 2
         if (self.points_server >= 4 or self.points_receiver >= 4) and \
@@ -95,4 +117,5 @@ class GameState:
             self.games_receiver = state['games_receiver']
             self.points_server = state['points_server']
             self.points_receiver = state['points_receiver']
+            self.is_tiebreak = state.get('is_tiebreak', False)
             self.current_set = state['current_set']

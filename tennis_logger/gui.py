@@ -118,7 +118,7 @@ class ScoreEditPopup(ctk.CTkToplevel):
     def __init__(self, parent, game_state, callback):
         super().__init__(parent)
         self.title("Edit Score")
-        self.geometry("400x500")
+        self.geometry("400x550")
         self.game_state = game_state
         self.callback = callback
         self.attributes("-topmost", True)
@@ -129,6 +129,8 @@ class ScoreEditPopup(ctk.CTkToplevel):
     def _init_ui(self):
         self.grid_columnconfigure(1, weight=1)
         
+
+
         # Sets
         ctk.CTkLabel(self, text="Sets (Server - Receiver)", font=("Arial", 14, "bold")).pack(pady=10)
         frame_sets = ctk.CTkFrame(self)
@@ -154,35 +156,62 @@ class ScoreEditPopup(ctk.CTkToplevel):
         self.entry_games_r.pack(side="left", padx=5)
         
         # Points
-        ctk.CTkLabel(self, text="Points (Server - Receiver)", font=("Arial", 14, "bold")).pack(pady=10)
+        frame_points_header = ctk.CTkFrame(self, fg_color="transparent")
+        frame_points_header.pack(pady=(10, 0))
+        ctk.CTkLabel(frame_points_header, text="Points (Server - Receiver)", font=("Arial", 14, "bold")).pack(side="left", padx=10)
+        
+        self.var_is_tiebreak = ctk.BooleanVar(value=self.game_state.is_tiebreak)
+        self.chk_tiebreak = ctk.CTkCheckBox(frame_points_header, text="Tie Breaker Mode", variable=self.var_is_tiebreak, command=self._update_point_options)
+        self.chk_tiebreak.pack(side="left", padx=10)
         frame_points = ctk.CTkFrame(self)
         frame_points.pack(pady=5)
         
-        points_options = ["0", "15", "30", "40", "AD"]
-        self.combo_points_s = ctk.CTkComboBox(frame_points, values=points_options, width=70)
-        self.combo_points_s.set(self.game_state.get_score_string(self.game_state.points_server))
+        self.combo_points_s = ctk.CTkComboBox(frame_points, width=70)
         self.combo_points_s.pack(side="left", padx=5)
         
         ctk.CTkLabel(frame_points, text="-").pack(side="left")
         
-        self.combo_points_r = ctk.CTkComboBox(frame_points, values=points_options, width=70)
-        self.combo_points_r.set(self.game_state.get_score_string(self.game_state.points_receiver))
+        self.combo_points_r = ctk.CTkComboBox(frame_points, width=70)
         self.combo_points_r.pack(side="left", padx=5)
+
+        # Initialize options
+        self._update_point_options()
+        
+        # Set current values
+        self.combo_points_s.set(self.game_state.get_score_string(self.game_state.points_server))
+        self.combo_points_r.set(self.game_state.get_score_string(self.game_state.points_receiver))
 
         # Save
         ctk.CTkButton(self, text="Save & Update", command=self.save, fg_color="green").pack(pady=30)
-        
+    
+    def _update_point_options(self):
+        if self.var_is_tiebreak.get():
+            options = [str(i) for i in range(21)] # 0 to 20
+        else:
+            options = ["0", "15", "30", "40", "AD"]
+            
+        self.combo_points_s.configure(values=options)
+        self.combo_points_r.configure(values=options)
+
     def save(self):
         try:
             self.game_state.sets_server = int(self.entry_sets_s.get())
             self.game_state.sets_receiver = int(self.entry_sets_r.get())
             self.game_state.games_server = int(self.entry_games_s.get())
             self.game_state.games_receiver = int(self.entry_games_r.get())
+            self.game_state.is_tiebreak = self.var_is_tiebreak.get()
             
-            # Map points string back to int
-            pmap = {"0": 0, "15": 1, "30": 2, "40": 3, "AD": 4}
-            self.game_state.points_server = pmap.get(self.combo_points_s.get(), 0)
-            self.game_state.points_receiver = pmap.get(self.combo_points_r.get(), 0)
+            if self.game_state.is_tiebreak:
+                # Direct integer conversion for tiebreak
+                self.game_state.points_server = int(self.combo_points_s.get())
+                self.game_state.points_receiver = int(self.combo_points_r.get())
+            else:
+                # Map points string back to int for standard scoring
+                pmap = {"0": 0, "15": 1, "30": 2, "40": 3, "AD": 4}
+                # Handle case where user switches from tiebreak (e.g. "5") back to standard
+                # Default to 0 if not in map
+                self.game_state.points_server = pmap.get(self.combo_points_s.get(), 0)
+                self.game_state.points_receiver = pmap.get(self.combo_points_r.get(), 0)
             
             self.callback()
             self.destroy()
@@ -245,33 +274,25 @@ class TennisLoggerApp(ctk.CTk):
         self.lbl_serve_code.pack(anchor="w")
         self.var_serve_code = ctk.StringVar(value="In (I) [6]")
         self.btn_serve_code = ctk.CTkButton(self.left_frame, textvariable=self.var_serve_code, 
-                                            command=lambda: self._open_popup("Serve Code", ["In (I)", "Ace (A)", "Winner (W)", "Fault (SF)", "Double Fault (DF)", "Wide (WB)"], self.var_serve_code),
+                                            command=lambda: self._open_serve_code_popup(),
                                             height=40)
         self.btn_serve_code.pack(fill="x", pady=5)
 
-        # Return Code
-        self.lbl_return_code = ctk.CTkLabel(self.left_frame, text="Return Code")
-        self.lbl_return_code.pack(anchor="w")
-        self.var_return_code = ctk.StringVar(value="In (I) [6]")
-        self.btn_return_code = ctk.CTkButton(self.left_frame, textvariable=self.var_return_code,
-                                             command=lambda: self._open_popup("Return Code", ["In (I)", "Net (N)", "Long (L)", "Wide (W)", "Unforced Error (UE)", "Forced Error (FE)"], self.var_return_code),
-                                             height=40)
-        self.btn_return_code.pack(fill="x", pady=5)
+
 
         # Rally Length
         self.lbl_rally = ctk.CTkLabel(self.left_frame, text="Rally Length")
         self.lbl_rally.pack(anchor="w")
-        self.var_rally = ctk.StringVar(value="Short [3]")
-        self.btn_rally = ctk.CTkButton(self.left_frame, textvariable=self.var_rally,
-                                       command=lambda: self._open_popup("Rally Length", ["Short", "Medium", "Long"], self.var_rally),
-                                       height=40)
-        self.btn_rally.pack(fill="x", pady=5)
+        self.var_rally = ctk.StringVar(value="Short")
+        self.seg_rally = ctk.CTkSegmentedButton(self.left_frame, values=["Short", "Medium", "Long"], variable=self.var_rally)
+        self.seg_rally.pack(fill="x", pady=5)
 
-        # Point Type
-        self.lbl_pattern = ctk.CTkLabel(self.left_frame, text="Point Type")
+        # Point Type & Tactic (merged)
+        self.lbl_pattern = ctk.CTkLabel(self.left_frame, text="Point Type & Tactic")
         self.lbl_pattern.pack(anchor="w")
-        self.var_pattern = ctk.StringVar(value="Rally (R) [11]")
+        self.var_pattern = ctk.StringVar(value="Rally (R) [18]")
         
+        # Merged options - removed duplicates and combined similar tactics
         point_type_options = [
             ("Rally (R)\nBaseline exchange", "Rally (R)"),
             ("Serve + 1 (S1)\nServe then attack", "Serve + 1 (S1)"),
@@ -280,42 +301,23 @@ class TennisLoggerApp(ctk.CTk):
             ("Approach (A)\nTransition to net", "Approach (A)"),
             ("Net Play (N)\nVolleys & Overheads", "Net Play (N)"),
             ("Passing Shot (P)\nPass net player", "Passing Shot (P)"),
-            ("Lob Defense (L)\nHigh defensive ball", "Lob Defense (L)"),
-            ("Defense (D)\nScrambling / Neutralizing", "Defense (D)"),
-            ("Move Opponent (M)\nRun them side-to-side", "Move Opponent (M)"),
-            ("Moon Ball (M)\nHigh heavy topspin", "Moon Ball (M)")
-        ]
-        
-        self.btn_pattern = ctk.CTkButton(self.left_frame, textvariable=self.var_pattern,
-                                         command=lambda: self._open_multi_popup("Point Type", point_type_options, self.var_pattern),
-                                         height=40)
-        self.btn_pattern.pack(fill="x", pady=5)
-
-        # Tactic
-        self.lbl_tactic = ctk.CTkLabel(self.left_frame, text="Tactic")
-        self.lbl_tactic.pack(anchor="w")
-        self.var_tactic = ctk.StringVar(value="Neutral (N) [13]")
-        
-        tactic_options = [
-            ("Neutral (N)\nKeep ball in play", "Neutral (N)"),
+            ("Lob/Deep Ball (L)\nHigh or deep shot", "Lob/Deep Ball (L)"),
+            ("Defense (D)\nScrambling", "Defense (D)"),
+            ("Move Opponent (M)\nAngles / Change Dir / Run", "Move Opponent (M)"),
             ("Consistency (C)\nHigh % shot", "Consistency (C)"),
-            ("Move Opponent (M)\nRun them side-to-side", "Move Opponent (M)"),
-            ("Depth (D)\nPush opponent back", "Depth (D)"),
-            ("Change Dir (CD)\nCross to DTL", "Change Dir (CD)"),
-            ("Weak Wing (W)\nTarget weakness", "Weak Wing (W)"),
             ("Body (B)\nJam the opponent", "Body (B)"),
-            ("Pace (P)\nOverwhelm with speed", "Pace (P)"),
+            ("Pace (PC)\nOverwhelm with speed", "Pace (PC)"),
             ("Serve & Volley (SV)\nServe -> Net", "Serve & Volley (SV)"),
             ("Chip & Charge (CC)\nSlice return -> Net", "Chip & Charge (CC)"),
             ("Drop Shot (DS)\nDraw them in", "Drop Shot (DS)"),
-            ("Angle (A)\nOpen the court", "Angle (A)"),
+            ("Backhand Slice (BS)\nSlice defense/neutral", "Backhand Slice (BS)"),
             ("Inside-Out (IO)\nRun around BH", "Inside-Out (IO)")
         ]
         
-        self.btn_tactic = ctk.CTkButton(self.left_frame, textvariable=self.var_tactic,
-                                        command=lambda: self._open_multi_popup("Tactic", tactic_options, self.var_tactic),
-                                        height=40)
-        self.btn_tactic.pack(fill="x", pady=5)
+        self.btn_pattern = ctk.CTkButton(self.left_frame, textvariable=self.var_pattern,
+                                         command=lambda: self._open_multi_popup("Point Type & Tactic", point_type_options, self.var_pattern),
+                                         height=40)
+        self.btn_pattern.pack(fill="x", pady=5)
 
         # --- Outcome Controls (Right Column) ---
         self.right_frame = ctk.CTkFrame(self)
@@ -328,7 +330,7 @@ class TennisLoggerApp(ctk.CTk):
         # How?
         self.lbl_how = ctk.CTkLabel(self.right_frame, text="How?")
         self.lbl_how.pack(anchor="w")
-        self.var_how = ctk.StringVar(value="Winner (W) [16]")
+        self.var_how = ctk.StringVar(value="Forehand Winner (FW) [15]")
         how_options = [
             # Errors first (yellow background)
             ("Forced Error (FE)", "Forced Error (FE)", "#DAA520"),
@@ -346,8 +348,7 @@ class TennisLoggerApp(ctk.CTk):
             "Passing Shot Winner (PW)", 
             "Service Winner (SW)", 
             "Unknown (UNK)",
-            "Volley Winner (VW)",
-            "Winner (W)"
+            "Volley Winner (VW)"
         ]
         
         self.btn_how = ctk.CTkButton(self.right_frame, textvariable=self.var_how,
@@ -361,14 +362,7 @@ class TennisLoggerApp(ctk.CTk):
         self.entry_notes = ctk.CTkEntry(self.right_frame, placeholder_text="How opponent defeated me...")
         self.entry_notes.pack(fill="x", pady=5)
 
-        # Final Shot
-        self.lbl_final_shot = ctk.CTkLabel(self.right_frame, text="Final Shot Type")
-        self.lbl_final_shot.pack(anchor="w")
-        self.var_final_shot = ctk.StringVar(value="Forehand (F) [7]")
-        self.btn_final_shot = ctk.CTkButton(self.right_frame, textvariable=self.var_final_shot,
-                                            command=lambda: self._open_popup("Final Shot Type", ["Forehand (F)", "Backhand (B)", "Volley (V)", "Overhead (O)", "Drop Shot (D)", "Lob (L)", "Slice (S)"], self.var_final_shot),
-                                            height=40)
-        self.btn_final_shot.pack(fill="x", pady=5)
+
 
         # Who Won? (Moved to bottom - clicking auto-logs the point)
         self.lbl_winner = ctk.CTkLabel(self.right_frame, text="Winner (Click to Log Point)", font=("Arial", 14, "bold"))
@@ -388,6 +382,20 @@ class TennisLoggerApp(ctk.CTk):
             # Add count to the selected value
             string_var.set(f"{val} [{len(options)}]")
         SelectionPopup(self, title, options, callback_with_count)
+
+    def _open_serve_code_popup(self):
+        """Special popup for serve code that auto-logs on Ace or Winner"""
+        # Reordered: regular serves first, then point-ending serves at bottom
+        serve_options = ["In (I)", "Fault (SF)", "Double Fault (DF)", "Wide (WB)", "Ace (A)", "Winner (W)"]
+        
+        def callback_with_auto_log(val):
+            # Add count to the selected value
+            self.var_serve_code.set(f"{val} [6]")
+            # Auto-log if Ace or Winner
+            if val in ["Ace (A)", "Winner (W)"]:
+                self.log_point()
+        
+        SelectionPopup(self, "Serve Code", serve_options, callback_with_auto_log)
 
     def _open_multi_popup(self, title, options, string_var):
         def callback_with_count(val):
@@ -444,11 +452,11 @@ class TennisLoggerApp(ctk.CTk):
             "server": server_val,
             "serve_number": self.var_serve_num.get(),
             "serve_code": self.var_serve_code.get(),
-            "return_code": self.var_return_code.get(),
+            "return_code": "N/A",  # Return code field removed from UI
             "rally_len_shots": self.var_rally.get(),
             "pattern": self.var_pattern.get(),
-            "tactic_code": self.var_tactic.get(),
-            "final_shot_type": self.var_final_shot.get(),
+            "tactic_code": self.var_pattern.get(),  # Same as pattern now (merged)
+            "final_shot_type": "N/A",  # Final shot type field removed from UI
             "final_outcome": outcome_code,
             "notes": self.entry_notes.get(),
         }
@@ -467,7 +475,7 @@ class TennisLoggerApp(ctk.CTk):
             self._update_score_display()
         
         # Reset some fields for next point
-        self.var_rally.set("Short [3]")
+        self.var_rally.set("Short")
         self.var_serve_num.set("1") # Reset to 1st serve usually
         self.entry_notes.delete(0, 'end') # Clear notes
 
