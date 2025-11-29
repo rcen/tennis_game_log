@@ -129,57 +129,56 @@ class ScoreEditPopup(ctk.CTkToplevel):
     def _init_ui(self):
         self.grid_columnconfigure(1, weight=1)
         
-
-
         # Sets
-        ctk.CTkLabel(self, text="Sets (Server - Receiver)", font=("Arial", 14, "bold")).pack(pady=10)
+        ctk.CTkLabel(self, text="Sets (Me - Opponent)", font=("Arial", 14, "bold")).pack(pady=10)
         frame_sets = ctk.CTkFrame(self)
         frame_sets.pack(pady=5)
-        self.entry_sets_s = ctk.CTkEntry(frame_sets, width=50)
-        self.entry_sets_s.insert(0, str(self.game_state.sets_server))
-        self.entry_sets_s.pack(side="left", padx=5)
+        self.entry_sets_me = ctk.CTkEntry(frame_sets, width=50)
+        self.entry_sets_me.insert(0, str(self.game_state.sets_me))
+        self.entry_sets_me.pack(side="left", padx=5)
         ctk.CTkLabel(frame_sets, text="-").pack(side="left")
-        self.entry_sets_r = ctk.CTkEntry(frame_sets, width=50)
-        self.entry_sets_r.insert(0, str(self.game_state.sets_receiver))
-        self.entry_sets_r.pack(side="left", padx=5)
+        self.entry_sets_opp = ctk.CTkEntry(frame_sets, width=50)
+        self.entry_sets_opp.insert(0, str(self.game_state.sets_opponent))
+        self.entry_sets_opp.pack(side="left", padx=5)
 
         # Games
-        ctk.CTkLabel(self, text="Games (Server - Receiver)", font=("Arial", 14, "bold")).pack(pady=10)
+        ctk.CTkLabel(self, text="Games (Me - Opponent)", font=("Arial", 14, "bold")).pack(pady=10)
         frame_games = ctk.CTkFrame(self)
         frame_games.pack(pady=5)
-        self.entry_games_s = ctk.CTkEntry(frame_games, width=50)
-        self.entry_games_s.insert(0, str(self.game_state.games_server))
-        self.entry_games_s.pack(side="left", padx=5)
+        self.entry_games_me = ctk.CTkEntry(frame_games, width=50)
+        self.entry_games_me.insert(0, str(self.game_state.games_me))
+        self.entry_games_me.pack(side="left", padx=5)
         ctk.CTkLabel(frame_games, text="-").pack(side="left")
-        self.entry_games_r = ctk.CTkEntry(frame_games, width=50)
-        self.entry_games_r.insert(0, str(self.game_state.games_receiver))
-        self.entry_games_r.pack(side="left", padx=5)
+        self.entry_games_opp = ctk.CTkEntry(frame_games, width=50)
+        self.entry_games_opp.insert(0, str(self.game_state.games_opponent))
+        self.entry_games_opp.pack(side="left", padx=5)
         
         # Points
         frame_points_header = ctk.CTkFrame(self, fg_color="transparent")
         frame_points_header.pack(pady=(10, 0))
-        ctk.CTkLabel(frame_points_header, text="Points (Server - Receiver)", font=("Arial", 14, "bold")).pack(side="left", padx=10)
+        ctk.CTkLabel(frame_points_header, text="Points (Me - Opponent)", font=("Arial", 14, "bold")).pack(side="left", padx=10)
         
         self.var_is_tiebreak = ctk.BooleanVar(value=self.game_state.is_tiebreak)
         self.chk_tiebreak = ctk.CTkCheckBox(frame_points_header, text="Tie Breaker Mode", variable=self.var_is_tiebreak, command=self._update_point_options)
         self.chk_tiebreak.pack(side="left", padx=10)
+        
         frame_points = ctk.CTkFrame(self)
         frame_points.pack(pady=5)
         
-        self.combo_points_s = ctk.CTkComboBox(frame_points, width=70)
-        self.combo_points_s.pack(side="left", padx=5)
+        self.combo_points_me = ctk.CTkComboBox(frame_points, width=70)
+        self.combo_points_me.pack(side="left", padx=5)
         
         ctk.CTkLabel(frame_points, text="-").pack(side="left")
         
-        self.combo_points_r = ctk.CTkComboBox(frame_points, width=70)
-        self.combo_points_r.pack(side="left", padx=5)
+        self.combo_points_opp = ctk.CTkComboBox(frame_points, width=70)
+        self.combo_points_opp.pack(side="left", padx=5)
 
         # Initialize options
         self._update_point_options()
         
         # Set current values
-        self.combo_points_s.set(self.game_state.get_score_string(self.game_state.points_server))
-        self.combo_points_r.set(self.game_state.get_score_string(self.game_state.points_receiver))
+        self.combo_points_me.set(self.game_state.get_score_string(self.game_state.points_me))
+        self.combo_points_opp.set(self.game_state.get_score_string(self.game_state.points_opponent))
 
         # Save
         ctk.CTkButton(self, text="Save & Update", command=self.save, fg_color="green").pack(pady=30)
@@ -190,76 +189,76 @@ class ScoreEditPopup(ctk.CTkToplevel):
         else:
             options = ["0", "15", "30", "40", "AD"]
             
-        self.combo_points_s.configure(values=options)
-        self.combo_points_r.configure(values=options)
+        self.combo_points_me.configure(values=options)
+        self.combo_points_opp.configure(values=options)
 
     def save(self):
         try:
-            self.game_state.sets_server = int(self.entry_sets_s.get())
-            self.game_state.sets_receiver = int(self.entry_sets_r.get())
-            self.game_state.games_server = int(self.entry_games_s.get())
-            self.game_state.games_receiver = int(self.entry_games_r.get())
+            self.game_state.sets_me = int(self.entry_sets_me.get())
+            self.game_state.sets_opponent = int(self.entry_sets_opp.get())
+            self.game_state.games_me = int(self.entry_games_me.get())
+            self.game_state.games_opponent = int(self.entry_games_opp.get())
             self.game_state.is_tiebreak = self.var_is_tiebreak.get()
             
             if self.game_state.is_tiebreak:
                 # Direct integer conversion for tiebreak
-                self.game_state.points_server = int(self.combo_points_s.get())
-                self.game_state.points_receiver = int(self.combo_points_r.get())
+                self.game_state.points_me = int(self.combo_points_me.get())
+                self.game_state.points_opponent = int(self.combo_points_opp.get())
             else:
                 # Map points string back to int for standard scoring
                 pmap = {"0": 0, "15": 1, "30": 2, "40": 3, "AD": 4}
-                # Handle case where user switches from tiebreak (e.g. "5") back to standard
-                # Default to 0 if not in map
-                self.game_state.points_server = pmap.get(self.combo_points_s.get(), 0)
-                self.game_state.points_receiver = pmap.get(self.combo_points_r.get(), 0)
+                self.game_state.points_me = pmap.get(self.combo_points_me.get(), 0)
+                self.game_state.points_opponent = pmap.get(self.combo_points_opp.get(), 0)
             
             self.callback()
             self.destroy()
         except ValueError:
             pass # Ignore invalid input
 
+
 class TennisLoggerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-
         self.title("Tennis Game Logger")
         self.geometry("1000x800")
-
+        
         self.game_state = GameState()
         self.logger = MatchLogger()
-
+        
         self._init_ui()
         self._update_score_display()
 
     def _init_ui(self):
-        # Main Layout: 2 Columns
+        # Main Layout: Left (Input), Right (Outcome/Log), Top (Score)
+        
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=0) # Scoreboard
-        self.grid_rowconfigure(1, weight=1) # Controls
+        self.grid_rowconfigure(1, weight=1)
 
-        # --- Scoreboard ---
-        self.score_frame = ctk.CTkFrame(self)
-        self.score_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
+        # Top Score Frame
+        self.top_frame = ctk.CTkFrame(self, height=100)
+        self.top_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
         
-        self.lbl_score = ctk.CTkLabel(self.score_frame, text="0 - 0", font=("Arial", 40, "bold"))
-        self.lbl_score.pack(pady=20)
+        self.lbl_score = ctk.CTkLabel(self.top_frame, text="Score (Me - Opponent): 0 - 0", font=("Arial", 24, "bold"))
+        self.lbl_score.pack(pady=10)
         
-        self.lbl_games = ctk.CTkLabel(self.score_frame, text="Games: 0 - 0 | Sets: 0 - 0", font=("Arial", 16))
+        self.lbl_games = ctk.CTkLabel(self.top_frame, text="Games: 0 - 0 | Sets: 0 - 0", font=("Arial", 16))
         self.lbl_games.pack(pady=5)
         
-        self.btn_edit_score = ctk.CTkButton(self.score_frame, text="Edit Score", command=self._open_score_edit, width=100, height=24, font=("Arial", 12))
+        self.btn_edit_score = ctk.CTkButton(self.top_frame, text="Edit Score", command=self._open_score_edit, width=100)
         self.btn_edit_score.pack(pady=5)
 
-        # --- Input Controls (Left Column) ---
-        self.left_frame = ctk.CTkScrollableFrame(self, label_text="Point Details")
+        # Left Frame - Point Details
+        self.left_frame = ctk.CTkFrame(self)
         self.left_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-
+        
+        ctk.CTkLabel(self.left_frame, text="Point Details", font=("Arial", 16, "bold")).pack(pady=10)
+        
         # Server
         self.lbl_server = ctk.CTkLabel(self.left_frame, text="Server")
         self.lbl_server.pack(anchor="w")
-        self.var_server = ctk.StringVar(value="n")
-        self.seg_server = ctk.CTkSegmentedButton(self.left_frame, values=["Me (n)", "Opponent (o)"], variable=self.var_server)
+        self.var_server = ctk.StringVar(value="Me")
+        self.seg_server = ctk.CTkSegmentedButton(self.left_frame, values=["Me", "Opponent"], variable=self.var_server)
         self.seg_server.pack(fill="x", pady=5)
 
         # Serve Number
@@ -277,7 +276,6 @@ class TennisLoggerApp(ctk.CTk):
                                             command=lambda: self._open_serve_code_popup(),
                                             height=40)
         self.btn_serve_code.pack(fill="x", pady=5)
-
 
 
         # Rally Length
@@ -319,13 +317,12 @@ class TennisLoggerApp(ctk.CTk):
                                          height=40)
         self.btn_pattern.pack(fill="x", pady=5)
 
-        # --- Outcome Controls (Right Column) ---
+
+        # Right Frame - Outcome & Log
         self.right_frame = ctk.CTkFrame(self)
         self.right_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
-
-        self.lbl_outcome = ctk.CTkLabel(self.right_frame, text="Point Outcome", font=("Arial", 20))
-        self.lbl_outcome.pack(pady=10)
-
+        
+        ctk.CTkLabel(self.right_frame, text="Point Outcome", font=("Arial", 16, "bold")).pack(pady=10)
 
         # How?
         self.lbl_how = ctk.CTkLabel(self.right_frame, text="How?")
@@ -361,27 +358,39 @@ class TennisLoggerApp(ctk.CTk):
         self.lbl_notes.pack(anchor="w")
         self.entry_notes = ctk.CTkEntry(self.right_frame, placeholder_text="How opponent defeated me...")
         self.entry_notes.pack(fill="x", pady=5)
-
-
-
         # Who Won? (Moved to bottom - clicking auto-logs the point)
         self.lbl_winner = ctk.CTkLabel(self.right_frame, text="Winner (Click to Log Point)", font=("Arial", 14, "bold"))
         self.lbl_winner.pack(anchor="w", pady=(20, 0))
-        self.var_winner = ctk.StringVar(value="Me")
-        self.seg_winner = ctk.CTkSegmentedButton(self.right_frame, values=["Me", "Opponent", "Unknown"], 
-                                                  variable=self.var_winner, command=self._on_winner_selected,
-                                                  selected_color="green", selected_hover_color="darkgreen")
-        self.seg_winner.pack(fill="x", pady=5)
+        
+        self.var_winner = ctk.StringVar(value="Me") # Keep variable for log_point logic
+        
+        frame_winner_btns = ctk.CTkFrame(self.right_frame, fg_color="transparent")
+        frame_winner_btns.pack(fill="x", pady=5)
+        
+        self.btn_win_me = ctk.CTkButton(frame_winner_btns, text="Me", 
+                                        command=lambda: self._on_winner_click("Me"),
+                                        fg_color="green", hover_color="darkgreen", width=80)
+        self.btn_win_me.pack(side="left", padx=2, expand=True, fill="x")
+        
+        self.btn_win_unk = ctk.CTkButton(frame_winner_btns, text="Unknown", 
+                                         command=lambda: self._on_winner_click("Unknown"),
+                                         fg_color="gray", hover_color="darkgray", width=80)
+        self.btn_win_unk.pack(side="left", padx=2, expand=True, fill="x")
+
+        self.btn_win_opp = ctk.CTkButton(frame_winner_btns, text="Opponent", 
+                                         command=lambda: self._on_winner_click("Opponent"),
+                                         fg_color="green", hover_color="darkgreen", width=80)
+        self.btn_win_opp.pack(side="left", padx=2, expand=True, fill="x")
 
         # Undo Button
-        self.btn_undo = ctk.CTkButton(self.right_frame, text="UNDO LAST", command=self.undo_point, fg_color="red")
-        self.btn_undo.pack(fill="x", pady=5)
+        self.btn_undo = ctk.CTkButton(self.right_frame, text="UNDO LAST", command=self.undo_point, fg_color="red", hover_color="darkred")
+        self.btn_undo.pack(side="bottom", fill="x", pady=20)
 
-    def _open_popup(self, title, options, string_var):
-        def callback_with_count(val):
-            # Add count to the selected value
-            string_var.set(f"{val} [{len(options)}]")
-        SelectionPopup(self, title, options, callback_with_count)
+    def _open_popup(self, title, options, variable):
+        SelectionPopup(self, title, options, lambda val: variable.set(val))
+        
+    def _open_multi_popup(self, title, options, variable):
+        MultiSelectionPopup(self, title, options, lambda val: variable.set(val))
 
     def _open_serve_code_popup(self):
         """Special popup for serve code that auto-logs on Ace or Winner"""
@@ -397,58 +406,44 @@ class TennisLoggerApp(ctk.CTk):
         
         SelectionPopup(self, "Serve Code", serve_options, callback_with_auto_log)
 
-    def _open_multi_popup(self, title, options, string_var):
-        def callback_with_count(val):
-            # Add count to the selected value (could be multi-value with |)
-            if val:
-                string_var.set(f"{val} [{len(options)}]")
-            else:
-                # If nothing selected, use the first option with count
-                first_val = options[0][1] if isinstance(options[0], tuple) else options[0]
-                string_var.set(f"{first_val} [{len(options)}]")
-        # Remove count from current selection before passing to popup
-        current = string_var.get()
-        if ' [' in current:
-            current = current[:current.rfind(' [')]
-        MultiSelectionPopup(self, title, options, callback_with_count, current_selection=current)
-
     def _open_score_edit(self):
         ScoreEditPopup(self, self.game_state, self._update_score_display)
 
-    def _on_winner_selected(self, value):
-        """Called when a winner is selected - automatically logs the point"""
-        # The value parameter is passed by CTkSegmentedButton when selection changes
+    def _update_score_display(self):
+        self.lbl_score.configure(text=f"Score (Me - Opponent): {self.game_state.get_display_score()}")
+        self.lbl_games.configure(text=f"Games: {self.game_state.games_me} - {self.game_state.games_opponent} | Sets: {self.game_state.sets_me} - {self.game_state.sets_opponent}")
+
+    def _on_winner_click(self, winner):
+        self.var_winner.set(winner)
         self.log_point()
 
-    def _update_score_display(self):
-        self.lbl_score.configure(text=self.game_state.get_display_score())
-        self.lbl_games.configure(text=f"Games: {self.game_state.games_server} - {self.game_state.games_receiver} | Sets: {self.game_state.sets_server} - {self.game_state.sets_receiver}")
-
     def log_point(self):
-        # Gather data
-        server_val = "n" if "Me" in self.var_server.get() else "o"
-        winner_val = self.var_winner.get()
+        winner = self.var_winner.get()
         
-        winner_is_me = winner_val == "Me"
-        winner_is_unknown = winner_val == "Unknown"
-        
-        # Determine outcome code
-        if winner_is_unknown:
-            outcome_code = "PtUnknown"
+        # Determine who won based on "Me" / "Opponent" / "Unknown"
+        winner_is_me = (winner == "Me")
+        server_val = "n" # n=Me (server), o=Opponent (server)
+        if self.var_server.get() == "Me": server_val = "m"
+        else: server_val = "o"
+
+        if winner == "Unknown":
+            pass
         else:
-            outcome_code = "PtWon" if winner_is_me else "PtLost"
-            
-        # Append 'How' details
-        how = self.var_how.get()
-        if "Winner" in how: outcome_code += "|W"
-        elif "Unforced" in how: outcome_code += "|UE"
-        elif "Forced" in how: outcome_code += "|FE"
-        elif "Unknown" in how: outcome_code += "|UNK"
+            # Add point to 'me' or 'opponent' directly
+            self.game_state.add_point('me' if winner_is_me else 'opponent')
+        
+        self._update_score_display()
+        
+        # Prepare data for CSV
+        # Map winner to code
+        outcome_code = "U"
+        if winner == "Me": outcome_code = "W"
+        elif winner == "Opponent": outcome_code = "L"
         
         data = {
             "set_no": self.game_state.current_set,
-            "game_no": self.game_state.games_server + self.game_state.games_receiver + 1,
-            "score_before_point": self.game_state.get_display_score(),
+            "game_no": self.game_state.games_me + self.game_state.games_opponent + 1,
+            "score_before_point": self.game_state.get_display_score(), 
             "server": server_val,
             "serve_number": self.var_serve_num.get(),
             "serve_code": self.var_serve_code.get(),
@@ -460,19 +455,8 @@ class TennisLoggerApp(ctk.CTk):
             "final_outcome": outcome_code,
             "notes": self.entry_notes.get(),
         }
-
-        # Log to CSV
+        
         self.logger.log_point(data)
-
-        # Update Game State ONLY if winner is known
-        if not winner_is_unknown:
-            # Determine if server or receiver won
-            # If server is Me (n) and Me won -> server won
-            # If server is Opponent (o) and Opponent won -> server won
-            # Otherwise receiver won
-            server_won = (server_val == "n" and winner_is_me) or (server_val == "o" and not winner_is_me)
-            self.game_state.add_point('server' if server_won else 'receiver')
-            self._update_score_display()
         
         # Reset some fields for next point
         self.var_rally.set("Short")
@@ -482,3 +466,4 @@ class TennisLoggerApp(ctk.CTk):
     def undo_point(self):
         self.game_state.undo()
         self._update_score_display()
+        self.logger.undo_last_log()
