@@ -118,7 +118,7 @@ class ScoreEditPopup(ctk.CTkToplevel):
     def __init__(self, parent, game_state, callback):
         super().__init__(parent)
         self.title("Edit Score")
-        self.geometry("400x550")
+        self.geometry("500x600")
         self.game_state = game_state
         self.callback = callback
         self.attributes("-topmost", True)
@@ -158,12 +158,22 @@ class ScoreEditPopup(ctk.CTkToplevel):
         frame_points_header.pack(pady=(10, 0))
         ctk.CTkLabel(frame_points_header, text="Points (Me - Opponent)", font=("Arial", 14, "bold")).pack(side="left", padx=10)
         
+        # No Ad Option
+        frame_no_ad = ctk.CTkFrame(self, fg_color="transparent")
+        frame_no_ad.pack(pady=5)
+        self.var_no_ad = ctk.BooleanVar(value=self.game_state.no_ad_mode)
+        self.chk_no_ad = ctk.CTkCheckBox(frame_no_ad, text="No Ad Scoring", variable=self.var_no_ad)
+        self.chk_no_ad.pack(side="left", padx=10)
+
+        # Tie Break Options
+        frame_tb = ctk.CTkFrame(self, fg_color="transparent")
+        frame_tb.pack(pady=5)
         self.var_is_tiebreak = ctk.BooleanVar(value=self.game_state.is_tiebreak)
-        self.chk_tiebreak = ctk.CTkCheckBox(frame_points_header, text="Tie Breaker Mode", variable=self.var_is_tiebreak, command=self._update_point_options)
+        self.chk_tiebreak = ctk.CTkCheckBox(frame_tb, text="Tie Breaker Mode", variable=self.var_is_tiebreak, command=self._update_point_options)
         self.chk_tiebreak.pack(side="left", padx=10)
         
         self.var_tb_target = ctk.StringVar(value=str(self.game_state.tiebreak_target))
-        self.seg_tb_target = ctk.CTkSegmentedButton(frame_points_header, values=["7", "10"], variable=self.var_tb_target, width=80)
+        self.seg_tb_target = ctk.CTkSegmentedButton(frame_tb, values=["7", "10"], variable=self.var_tb_target, width=80)
         self.seg_tb_target.pack(side="left", padx=10)
         
         frame_points = ctk.CTkFrame(self)
@@ -206,6 +216,7 @@ class ScoreEditPopup(ctk.CTkToplevel):
             self.game_state.games_opponent = int(self.entry_games_opp.get())
             self.game_state.is_tiebreak = self.var_is_tiebreak.get()
             self.game_state.tiebreak_target = int(self.var_tb_target.get())
+            self.game_state.no_ad_mode = self.var_no_ad.get()
             
             if self.game_state.is_tiebreak:
                 # Direct integer conversion for tiebreak
@@ -227,7 +238,7 @@ class TennisLoggerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Tennis Game Logger")
-        self.geometry("1000x800")
+        self.geometry("900x650")
         
         self.game_state = GameState()
         self.logger = MatchLogger()
@@ -251,6 +262,10 @@ class TennisLoggerApp(ctk.CTk):
         
         self.lbl_games = ctk.CTkLabel(self.top_frame, text="Games: 0 - 0 | Sets: 0 - 0", font=("Arial", 16))
         self.lbl_games.pack(pady=5)
+        
+        # Last point timestamp display
+        self.lbl_timestamp = ctk.CTkLabel(self.top_frame, text="Last Point: --:--:--", font=("Arial", 12), text_color="gray")
+        self.lbl_timestamp.pack(pady=3)
         
         self.btn_edit_score = ctk.CTkButton(self.top_frame, text="Edit Score", command=self._open_score_edit, width=100)
         self.btn_edit_score.pack(pady=5)
@@ -278,7 +293,7 @@ class TennisLoggerApp(ctk.CTk):
         # Serve Code
         self.lbl_serve_code = ctk.CTkLabel(self.left_frame, text="Serve Code")
         self.lbl_serve_code.pack(anchor="w")
-        self.var_serve_code = ctk.StringVar(value="In (I) [6]")
+        self.var_serve_code = ctk.StringVar(value="Unknown (UNK)")
         self.btn_serve_code = ctk.CTkButton(self.left_frame, textvariable=self.var_serve_code, 
                                             command=lambda: self._open_serve_code_popup(),
                                             height=40)
@@ -390,9 +405,17 @@ class TennisLoggerApp(ctk.CTk):
                                          fg_color="green", hover_color="darkgreen", width=80)
         self.btn_win_opp.pack(side="left", padx=2, expand=True, fill="x")
 
-        # Undo Button
-        self.btn_undo = ctk.CTkButton(self.right_frame, text="UNDO LAST", command=self.undo_point, fg_color="red", hover_color="darkred")
-        self.btn_undo.pack(side="bottom", fill="x", pady=20)
+        # Undo/Redo Buttons Frame
+        frame_undo_redo = ctk.CTkFrame(self.right_frame, fg_color="transparent")
+        frame_undo_redo.pack(side="bottom", fill="x", pady=20)
+        
+        self.btn_undo = ctk.CTkButton(frame_undo_redo, text="UNDO LAST", command=self.undo_point, 
+                                      fg_color="red", hover_color="darkred")
+        self.btn_undo.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        self.btn_redo = ctk.CTkButton(frame_undo_redo, text="REDO", command=self.redo_point,
+                                      fg_color="orange", hover_color="darkorange")
+        self.btn_redo.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
     def _open_popup(self, title, options, variable):
         SelectionPopup(self, title, options, lambda val: variable.set(val))
@@ -420,6 +443,16 @@ class TennisLoggerApp(ctk.CTk):
     def _update_score_display(self):
         self.lbl_score.configure(text=f"Score (Me - Opponent): {self.game_state.get_display_score()}")
         self.lbl_games.configure(text=f"Games: {self.game_state.games_me} - {self.game_state.games_opponent} | Sets: {self.game_state.sets_me} - {self.game_state.sets_opponent}")
+        self._update_timestamp_display()
+
+    def _update_timestamp_display(self):
+        """Update the timestamp display with the last logged point's time"""
+        last_point_data = self.logger.get_last_point_data()
+        if last_point_data and 'timestamp' in last_point_data:
+            timestamp_str = last_point_data['timestamp']
+            self.lbl_timestamp.configure(text=f"Last Point: {timestamp_str}")
+        else:
+            self.lbl_timestamp.configure(text="Last Point: --:--:--")
 
     def _on_winner_click(self, winner):
         self.var_winner.set(winner)
@@ -469,11 +502,106 @@ class TennisLoggerApp(ctk.CTk):
         # Reset some fields for next point
         self.var_rally.set("Medium")
         self.var_serve_num.set("1") # Reset to 1st serve usually
+        self.var_serve_code.set("Unknown (UNK)") # Reset Serve Code to Unknown
         self.var_how.set("Unknown (UNK)") # Reset How to Unknown
         self.var_pattern.set("Unknown (UNK)") # Reset Pattern to Unknown
         self.entry_notes.delete(0, 'end') # Clear notes
 
     def undo_point(self):
+        # Get the last point data before removing it
+        last_point_data = self.logger.get_last_point_data()
+        
+        # Undo the game state
         self.game_state.undo()
         self._update_score_display()
+        
+        # Remove the last log entry
         self.logger.undo_last_log()
+        
+        # Restore the previous point's data to the UI
+        if last_point_data:
+            # Restore all the fields from the previous point
+            if 'server' in last_point_data:
+                server_val = last_point_data['server']
+                self.var_server.set("Me" if server_val == "m" else "Opponent")
+            
+            if 'serve_number' in last_point_data:
+                self.var_serve_num.set(last_point_data['serve_number'])
+            
+            if 'serve_code' in last_point_data:
+                self.var_serve_code.set(last_point_data['serve_code'])
+            
+            if 'rally_len_shots' in last_point_data:
+                rally_val = last_point_data['rally_len_shots']
+                # Map back to Short/Medium/Long if possible
+                if "Short" in str(rally_val):
+                    self.var_rally.set("Short")
+                elif "Long" in str(rally_val):
+                    self.var_rally.set("Long")
+                else:
+                    self.var_rally.set("Medium")
+            
+            if 'pattern' in last_point_data:
+                self.var_pattern.set(last_point_data['pattern'])
+            
+            # Note: var_how doesn't seem to map to a specific CSV column in log_point,
+            # so we set it to Unknown when undoing
+            self.var_how.set("Unknown (UNK)")
+            
+            if 'notes' in last_point_data:
+                self.entry_notes.delete(0, 'end')
+                self.entry_notes.insert(0, last_point_data['notes'])
+
+    def redo_point(self):
+        """Redo the last undone point"""
+        if not self.logger.can_redo():
+            return  # Nothing to redo
+        
+        # Get the point data from undo stack and restore it
+        point_data = self.logger.redo_last_log()
+        
+        if point_data:
+            # Determine who won from final_outcome
+            outcome = point_data.get('final_outcome', 'U')
+            if outcome == 'W':
+                winner = 'me'
+            elif outcome == 'L':
+                winner = 'opponent'
+            else:
+                winner = None  # Unknown - don't update score
+            
+            # Add point to game state
+            if winner:
+                self.game_state.add_point(winner)
+            
+            # Update display
+            self._update_score_display()
+            
+            # Restore UI fields from the redone point
+            if 'server' in point_data:
+                server_val = point_data['server']
+                self.var_server.set("Me" if server_val == "m" else "Opponent")
+            
+            if 'serve_number' in point_data:
+                self.var_serve_num.set(point_data['serve_number'])
+            
+            if 'serve_code' in point_data:
+                self.var_serve_code.set(point_data['serve_code'])
+            
+            if 'rally_len_shots' in point_data:
+                rally_val = point_data['rally_len_shots']
+                if "Short" in str(rally_val):
+                    self.var_rally.set("Short")
+                elif "Long" in str(rally_val):
+                    self.var_rally.set("Long")
+                else:
+                    self.var_rally.set("Medium")
+            
+            if 'pattern' in point_data:
+                self.var_pattern.set(point_data['pattern'])
+            
+            self.var_how.set("Unknown (UNK)")
+            
+            if 'notes' in point_data:
+                self.entry_notes.delete(0, 'end')
+                self.entry_notes.insert(0, point_data['notes'])

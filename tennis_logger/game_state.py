@@ -10,6 +10,7 @@ class GameState:
         self.points_me = 0
         self.points_opponent = 0
         self.is_tiebreak = False
+        self.no_ad_mode = True # Default to No Ad Scoring
         self.current_set = 1
         self.tiebreak_target = 7 # Default to 7 points
         self.match_history = [] # List of tuples/dicts for undo functionality
@@ -55,7 +56,8 @@ class GameState:
             'points_opponent': self.points_opponent,
             'is_tiebreak': self.is_tiebreak,
             'current_set': self.current_set,
-            'tiebreak_target': self.tiebreak_target
+            'tiebreak_target': self.tiebreak_target,
+            'no_ad_mode': self.no_ad_mode
         })
 
         if winner == 'me':
@@ -82,9 +84,17 @@ class GameState:
             return
 
         # Simple game winning logic
-        # 4 points and ahead by 2
-        if (self.points_me >= 4 or self.points_opponent >= 4) and \
-           abs(self.points_me - self.points_opponent) >= 2:
+        # Standard: 4 points and ahead by 2
+        # No Ad: 4 points (Sudden Death at 3-3)
+        
+        points_needed = 4
+        margin_needed = 2
+        
+        if self.no_ad_mode:
+            margin_needed = 1
+            
+        if (self.points_me >= points_needed or self.points_opponent >= points_needed) and \
+           abs(self.points_me - self.points_opponent) >= margin_needed:
             
             if self.points_me > self.points_opponent:
                 self.games_me += 1
@@ -122,3 +132,4 @@ class GameState:
             self.is_tiebreak = state.get('is_tiebreak', False)
             self.current_set = state['current_set']
             self.tiebreak_target = state.get('tiebreak_target', 7)
+            self.no_ad_mode = state.get('no_ad_mode', False)
