@@ -1,0 +1,2 @@
+SUCCESS: var_how initialized with 'Unknown (UNK)'
+SUCCESS: var_how reset to 'Unknown (UNK)' in log_point

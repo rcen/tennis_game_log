@@ -158,6 +158,15 @@ class ScoreEditPopup(ctk.CTkToplevel):
         frame_points_header.pack(pady=(10, 0))
         ctk.CTkLabel(frame_points_header, text="Points (Me - Opponent)", font=("Arial", 14, "bold")).pack(side="left", padx=10)
         
+        # Set Format (games to win a set)
+        frame_set_format = ctk.CTkFrame(self, fg_color="transparent")
+        frame_set_format.pack(pady=5)
+        ctk.CTkLabel(frame_set_format, text="Set Format:").pack(side="left", padx=5)
+        self.var_games_to_win = ctk.StringVar(value=str(self.game_state.games_to_win_set))
+        self.seg_set_format = ctk.CTkSegmentedButton(frame_set_format, values=["4", "6", "8"], variable=self.var_games_to_win, width=120)
+        self.seg_set_format.pack(side="left", padx=10)
+        ctk.CTkLabel(frame_set_format, text="games").pack(side="left")
+
         # No Ad Option
         frame_no_ad = ctk.CTkFrame(self, fg_color="transparent")
         frame_no_ad.pack(pady=5)
@@ -217,6 +226,7 @@ class ScoreEditPopup(ctk.CTkToplevel):
             self.game_state.is_tiebreak = self.var_is_tiebreak.get()
             self.game_state.tiebreak_target = int(self.var_tb_target.get())
             self.game_state.no_ad_mode = self.var_no_ad.get()
+            self.game_state.games_to_win_set = int(self.var_games_to_win.get())
             
             if self.game_state.is_tiebreak:
                 # Direct integer conversion for tiebreak
@@ -289,16 +299,6 @@ class TennisLoggerApp(ctk.CTk):
         self.var_serve_num = ctk.StringVar(value="1")
         self.seg_serve_num = ctk.CTkSegmentedButton(self.left_frame, values=["1", "2"], variable=self.var_serve_num)
         self.seg_serve_num.pack(fill="x", pady=5)
-
-        # Serve Code
-        self.lbl_serve_code = ctk.CTkLabel(self.left_frame, text="Serve Code")
-        self.lbl_serve_code.pack(anchor="w")
-        self.var_serve_code = ctk.StringVar(value="Unknown (UNK)")
-        self.btn_serve_code = ctk.CTkButton(self.left_frame, textvariable=self.var_serve_code, 
-                                            command=lambda: self._open_serve_code_popup(),
-                                            height=40)
-        self.btn_serve_code.pack(fill="x", pady=5)
-
 
         # Rally Length
         self.lbl_rally = ctk.CTkLabel(self.left_frame, text="Rally Length")
@@ -423,20 +423,6 @@ class TennisLoggerApp(ctk.CTk):
     def _open_multi_popup(self, title, options, variable):
         MultiSelectionPopup(self, title, options, lambda val: variable.set(val))
 
-    def _open_serve_code_popup(self):
-        """Special popup for serve code that auto-logs on Ace or Winner"""
-        # Reordered: regular serves first, then point-ending serves at bottom
-        serve_options = ["In (I)", "Fault (SF)", "Double Fault (DF)", "Wide (WB)", "Ace (A)", "Winner (W)"]
-        
-        def callback_with_auto_log(val):
-            # Add count to the selected value
-            self.var_serve_code.set(f"{val} [6]")
-            # Auto-log if Ace or Winner
-            if val in ["Ace (A)", "Winner (W)"]:
-                self.log_point()
-        
-        SelectionPopup(self, "Serve Code", serve_options, callback_with_auto_log)
-
     def _open_score_edit(self):
         ScoreEditPopup(self, self.game_state, self._update_score_display)
 
@@ -487,7 +473,7 @@ class TennisLoggerApp(ctk.CTk):
             "score_before_point": self.game_state.get_display_score(), 
             "server": server_val,
             "serve_number": self.var_serve_num.get(),
-            "serve_code": self.var_serve_code.get(),
+            "serve_code": "N/A",  # Serve code field removed from UI
             "return_code": "N/A",  # Return code field removed from UI
             "rally_len_shots": self.var_rally.get(),
             "pattern": self.var_pattern.get(),
@@ -502,7 +488,6 @@ class TennisLoggerApp(ctk.CTk):
         # Reset some fields for next point
         self.var_rally.set("Medium")
         self.var_serve_num.set("1") # Reset to 1st serve usually
-        self.var_serve_code.set("Unknown (UNK)") # Reset Serve Code to Unknown
         self.var_how.set("Unknown (UNK)") # Reset How to Unknown
         self.var_pattern.set("Unknown (UNK)") # Reset Pattern to Unknown
         self.entry_notes.delete(0, 'end') # Clear notes
@@ -527,9 +512,6 @@ class TennisLoggerApp(ctk.CTk):
             
             if 'serve_number' in last_point_data:
                 self.var_serve_num.set(last_point_data['serve_number'])
-            
-            if 'serve_code' in last_point_data:
-                self.var_serve_code.set(last_point_data['serve_code'])
             
             if 'rally_len_shots' in last_point_data:
                 rally_val = last_point_data['rally_len_shots']
@@ -584,9 +566,6 @@ class TennisLoggerApp(ctk.CTk):
             
             if 'serve_number' in point_data:
                 self.var_serve_num.set(point_data['serve_number'])
-            
-            if 'serve_code' in point_data:
-                self.var_serve_code.set(point_data['serve_code'])
             
             if 'rally_len_shots' in point_data:
                 rally_val = point_data['rally_len_shots']

@@ -13,6 +13,7 @@ class GameState:
         self.no_ad_mode = True # Default to No Ad Scoring
         self.current_set = 1
         self.tiebreak_target = 7 # Default to 7 points
+        self.games_to_win_set = 6 # Default to 6 games (options: 4, 6, 8)
         self.match_history = [] # List of tuples/dicts for undo functionality
 
     def get_score_string(self, points):
@@ -57,7 +58,8 @@ class GameState:
             'is_tiebreak': self.is_tiebreak,
             'current_set': self.current_set,
             'tiebreak_target': self.tiebreak_target,
-            'no_ad_mode': self.no_ad_mode
+            'no_ad_mode': self.no_ad_mode,
+            'games_to_win_set': self.games_to_win_set
         })
 
         if winner == 'me':
@@ -106,9 +108,9 @@ class GameState:
             self._check_set_end()
 
     def _check_set_end(self):
-        # Simple set winning logic (6 games, ahead by 2, or 7-6 tiebreak - simplified for now to 6-X)
-        # TODO: Implement Tiebreak logic properly if needed
-        if (self.games_me >= 6 or self.games_opponent >= 6) and \
+        # Set winning logic: configurable games (4, 6, or 8), ahead by 2
+        target = self.games_to_win_set
+        if (self.games_me >= target or self.games_opponent >= target) and \
            abs(self.games_me - self.games_opponent) >= 2:
             
             if self.games_me > self.games_opponent:
@@ -133,3 +135,4 @@ class GameState:
             self.current_set = state['current_set']
             self.tiebreak_target = state.get('tiebreak_target', 7)
             self.no_ad_mode = state.get('no_ad_mode', False)
+            self.games_to_win_set = state.get('games_to_win_set', 6)

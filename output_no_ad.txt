@@ -1,0 +1,6 @@
+Testing Standard Scoring (Ad)...
+SUCCESS: Game did NOT end at Ad (Standard)
+SUCCESS: Game ended after winning from Ad (Standard)
+
+Testing No Ad Scoring...
+SUCCESS: Game ended immediately after Deuce point (No Ad)

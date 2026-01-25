@@ -1,0 +1,2 @@
+SUCCESS: 'Unknown (UNK)' used 2 times (expected at least 2 for How and Pattern)
+SUCCESS: var_pattern reset to 'Unknown (UNK)' in log_point

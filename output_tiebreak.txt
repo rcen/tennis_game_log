@@ -1,0 +1,7 @@
+Testing tiebreak with target: 10
+SUCCESS: Game did NOT end at 7-0
+SUCCESS: Game did NOT end at 10-9
+SUCCESS: Game ended at 11-9
+
+Testing tiebreak with target: 7
+SUCCESS: Game ended at 7-0

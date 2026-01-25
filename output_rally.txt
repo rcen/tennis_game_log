@@ -1,0 +1,2 @@
+SUCCESS: var_rally initialized with 'Medium'
+SUCCESS: var_rally reset to 'Medium' in log_point
